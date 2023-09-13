@@ -2,6 +2,7 @@ const path = require("path");
 const { parse } = require("csv-parse");
 const fs = require("fs");
 
+const planets = require("./planets.mongo");
 const habitablePlanets = [];
 
 // This function returns a promise because when node js runs, it exports the habitablePlanets variable without updating it with the found data (or the found habitable planets from the csv file). This promise makes sure that the code blocks (node js stops executing other code) until the promise is resolved (or the data is populated). The promise returned from this function has to be resolved before listening to requests in the server. This means that the promise has to be executed before the server starts listening to requests using the server.listen().
@@ -16,9 +17,13 @@ function loadPlanetsData() {
           columns: true,
         })
       )
-      .on("data", (data) => {
+      .on("data", async (data) => {
         if (isHabitablePlanet(data)) {
-          habitablePlanets.push(data);
+          // TODO: Replace below create with upsert (which stands for insert + create = upsert)
+
+          // await planets.create({
+          //   keplerName: data.kepler_name,
+          // });
         }
       })
       .on("error", (err) => {
@@ -42,8 +47,8 @@ function isHabitablePlanet(planet) {
   );
 }
 
-function getAllPlanets(){
-  return habitablePlanets
+function getAllPlanets() {
+  return habitablePlanets;
 }
 
 module.exports = {
