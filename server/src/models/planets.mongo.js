@@ -7,4 +7,6 @@ const types = {
   },
 };
 
-const planetsSchema = new mongoose.Schema(types);
+const planetSchema = new mongoose.Schema(types);
+
+module.exports = mongoose.model("Planet", planetSchema);
