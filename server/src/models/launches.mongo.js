@@ -33,4 +33,7 @@ const types = {
   },
 };
 
-const launchesSchema = new mongoose.Schema(types);
+const launcheSchema = new mongoose.Schema(types);
+
+//  Connects launcheSchema with the "launches" collection. Note that the first argument is written as Launch because mongoose will make it lowercase and plurelize it.
+module.exports = mongoose.model("Launch", launcheSchema)
