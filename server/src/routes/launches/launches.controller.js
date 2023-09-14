@@ -42,21 +42,29 @@ async function httpAddNewLaunch(req, res) {
   return res.status(201).json(launch);
 }
 
-function httpAbortLaunch(req, res) {
+async function httpAbortLaunch(req, res) {
   // This variable access the request interface and then it goes to the params property and then the id. The id was created by express when we specified the endpoint "/launshes/:id" in the launches.router.js file.
   const launchId = Number(req.params.id);
+  const launchIsPresent = await existsLauchWithId(launchId);
 
   //  This condition checks if the launchId exists. Since the lanch model (or the lauches stored data) is a Map, we only need the id number in order to delete it. If the condition is true the server responds with a 400 error status and a json the specifies the error.
-  if (!existsLauchWithId(launchId)) {
+  if (!launchIsPresent) {
     return res.status(400).json({
       error: "Launch not found",
     });
   }
 
-  const aborted = abortLaunchById(launchId);
+  const aborted = await abortLaunchById(launchId);
+  if (!aborted) {
+    return res.status(400).json({
+      error: "Launch not aborted",
+    });
+  }
 
   // If the request was successful, return a 200 status code and a json with the aborted launch
-  return res.status(200).json(aborted);
+  return res.status(200).json({
+    ok: true,
+  });
 }
 
 module.exports = {
