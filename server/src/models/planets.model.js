@@ -18,7 +18,6 @@ function loadPlanetsData() {
       )
       .on("data", async (data) => {
         if (isHabitablePlanet(data)) {
-          
           savePlanet(data);
         }
       })
@@ -47,7 +46,13 @@ function isHabitablePlanet(planet) {
 
 async function getAllPlanets() {
   //  This will return all the planets (or all documents) from the collection
-  return await planets.find({});
+  return await planets.find(
+    {},
+    {
+      _id: 0,
+      __v: 0,
+    }
+  );
 }
 
 async function savePlanet(planet) {
