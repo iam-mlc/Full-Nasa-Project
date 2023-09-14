@@ -1,8 +1,6 @@
 const launchesDatabase = require("./launches.mongo");
 const planetsDatabase = require("./planets.mongo");
-const launches = new Map();
 
-let latestFlightNumber = 100;
 const DEFAULT_FLIGHT_NUMBER = 100;
 
 const launch = {
@@ -70,17 +68,24 @@ async function scheduleNewLaunch(launch) {
   await saveLaunch(newLaunch);
 }
 
-function existsLauchWithId(launchId) {
+async function existsLauchWithId(launchId) {
   //  See if the launches Map contains the launchId. The launchId should be a key of the map. If the key is not found, the return statement will be undefined
-  return launches.has(launchId);
+  return await launchesDatabase.findOne({ flightNumber: launchId });
 }
 
 // This function is used to set certain properties to false.
-function abortLaunchById(launchId) {
-  const aborted = launches.get(launchId);
-  aborted.upcoming = false;
-  aborted.success = false;
-  return aborted;
+async function abortLaunchById(launchId) {
+  const aborted = await launchesDatabase.updateOne(
+    {
+      flightNumber: launchId,
+    },
+    {
+      upcoming: false,
+      success: false,
+    }
+  );
+
+  return aborted.modifiedCount === 1;
 }
 
 // This function is used to find a planet in the planets database by its name
@@ -98,7 +103,6 @@ async function getLatestFlightNumber() {
   }
 
   return latestLaunch.flightNumber;
-
 }
 
 module.exports = {
