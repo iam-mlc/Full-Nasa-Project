@@ -1,3 +1,5 @@
+const launchesDatabase = require("./launches.mongo");
+const planetsDatabase = require("./planets.mongo");
 const launches = new Map();
 
 let latestFlightNumber = 100;
@@ -13,12 +15,43 @@ const launch = {
   success: true,
 };
 
-// This is where the first item (or launch), from the launch object, is set to the map.
-launches.set(launch.flightNumber, launch);
+saveLaunch(launch);
 
-function getAllLauches() {
+// This is where the first item (or launch), from the launch object, is set to the map.
+// launches.set(launch.flightNumber, launch);
+
+async function getAllLauches() {
   //  This converts the launches Map to an Array and then returns it. NOTE: The Launches array cannot be iterated (or looped), but an array can be looped. This is why the launches Map is being converted into an array.
-  return Array.from(launches.values());
+  // return Array.from(launches.values());
+  return await launchesDatabase.find(
+    {},
+    {
+      _id: 0,
+      __v: 0,
+    }
+  );
+}
+async function saveLaunch(launch) {
+  const planetExists = await findPlanet(launch.target);
+
+  try {
+    if (!planetExists) {
+      throw new Error("No matching planet found");
+    }
+
+    await launchesDatabase.updateOne(
+      {
+        flightNumber: launch.flightNumber,
+      },
+      launch,
+      {
+        upsert: true,
+      }
+    );
+  } catch (err) {
+    console.log("Could not save launch");
+    console.log(err);
+  }
 }
 function addNewLaunch(launch) {
   // This varibale is being concatenated (or increased) in order to set the latest flight (or launch) number in a consistent manner.
@@ -46,7 +79,11 @@ function abortLaunchById(launchId) {
   const aborted = launches.get(launchId);
   aborted.upcoming = false;
   aborted.success = false;
-  return aborted
+  return aborted;
+}
+
+async function findPlanet(planetName) {
+  return await planetsDatabase.findOne({ keplerName: planetName });
 }
 
 module.exports = {
