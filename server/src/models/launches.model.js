@@ -3,6 +3,7 @@ const planetsDatabase = require("./planets.mongo");
 const launches = new Map();
 
 let latestFlightNumber = 100;
+const DEFAULT_FLIGHT_NUMBER = 100;
 
 const launch = {
   flightNumber: 100,
@@ -17,12 +18,8 @@ const launch = {
 
 saveLaunch(launch);
 
-// This is where the first item (or launch), from the launch object, is set to the map.
-// launches.set(launch.flightNumber, launch);
-
 async function getAllLauches() {
   //  This converts the launches Map to an Array and then returns it. NOTE: The Launches array cannot be iterated (or looped), but an array can be looped. This is why the launches Map is being converted into an array.
-  // return Array.from(launches.values());
   return await launchesDatabase.find(
     {},
     {
@@ -31,6 +28,8 @@ async function getAllLauches() {
     }
   );
 }
+
+//  This function adds a new launch to the database related to launches. It first checks if the target planet exists in the planets database. If it does not exist, it returns an error. Otherwise it saves the launch to the database. When saving the lauch to the database the updateOne method is used, so that mongoose verifies if the data already exists (to avoid creating duplicates) based on the luanch flight number. If it already exists, the existing launch will be updated. Incase there was an error saving the launch, an error will be returned
 async function saveLaunch(launch) {
   const planetExists = await findPlanet(launch.target);
 
@@ -53,20 +52,22 @@ async function saveLaunch(launch) {
     console.log(err);
   }
 }
-function addNewLaunch(launch) {
-  // This varibale is being concatenated (or increased) in order to set the latest flight (or launch) number in a consistent manner.
-  latestFlightNumber++;
 
-  //  This sets a new item (launch) to the Map. The key of The Map is based on the flightNumber, making it the first argument of the set(). The value of the mentioned key is based on the custom launches interface(or object).Note: .the customers property is a constant, meaning that it will never change. The values of the customers property will always be ZTM and NASA. The upcoming and success properties are added to the launch interface in this function.
-  launches.set(
-    latestFlightNumber,
-    Object.assign(launch, {
-      flightNumber: latestFlightNumber,
-      customers: ["ZTM", "NASA"],
-      upcoming: true,
-      success: true,
-    })
-  );
+// This function adds a new launch to the database related to launches
+async function scheduleNewLaunch(launch) {
+  //  Since mongo db does not share the flight number with other clusters it will not make since to increment the flight number as a variable that is a part of the server. So we need to get the latest flight number that is stored in the database. By default we set the first flight number to the DEFAULT_FLIGHT_NUMBER variable and increment everytime a new launch is scheduled.
+  const newFlightNumber = (await getLatestFlightNumber()) + 1;
+
+  const internalProperties = {
+    upcoming: true,
+    success: true,
+    customers: ["ZTM", "NASA"],
+    flightNumber: newFlightNumber,
+  };
+
+  const newLaunch = Object.assign(launch, internalProperties);
+
+  await saveLaunch(newLaunch);
 }
 
 function existsLauchWithId(launchId) {
@@ -74,7 +75,7 @@ function existsLauchWithId(launchId) {
   return launches.has(launchId);
 }
 
-// This function is used to set certain properties to fallse.
+// This function is used to set certain properties to false.
 function abortLaunchById(launchId) {
   const aborted = launches.get(launchId);
   aborted.upcoming = false;
@@ -82,13 +83,26 @@ function abortLaunchById(launchId) {
   return aborted;
 }
 
+// This function is used to find a planet in the planets database by its name
 async function findPlanet(planetName) {
   return await planetsDatabase.findOne({ keplerName: planetName });
 }
 
+//  This function is used to get the latest flight number of the launches in the database. It first sorts the launches by flight number, in descending order and then returns the last flight number. If the flight number does not exist, it returns the DEFAULT_FLIGHT_NUMBER;
+async function getLatestFlightNumber() {
+  //  Sorts the launches by flight number in descending order. Note that the string argument of the sort() method is the property to be sorted. The "-" (sign) in front of the flighNumber string is specifying to mangoose that the flight number should be sorted in descending order.
+  const latestLaunch = await launchesDatabase.findOne().sort("-flightNumber");
+
+  if (!latestLaunch) {
+    return DEFAULT_FLIGHT_NUMBER;
+  }
+
+  return latestLaunch.flightNumber;
+}
+
 module.exports = {
   getAllLauches,
-  addNewLaunch,
   existsLauchWithId,
   abortLaunchById,
+  scheduleNewLaunch,
 };
