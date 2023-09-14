@@ -3,7 +3,6 @@ const { parse } = require("csv-parse");
 const fs = require("fs");
 
 const planets = require("./planets.mongo");
-const habitablePlanets = [];
 
 // This function returns a promise because when node js runs, it exports the habitablePlanets variable without updating it with the found data (or the found habitable planets from the csv file). This promise makes sure that the code blocks (node js stops executing other code) until the promise is resolved (or the data is populated). The promise returned from this function has to be resolved before listening to requests in the server. This means that the promise has to be executed before the server starts listening to requests using the server.listen().
 function loadPlanetsData() {
@@ -19,18 +18,18 @@ function loadPlanetsData() {
       )
       .on("data", async (data) => {
         if (isHabitablePlanet(data)) {
-          // TODO: Replace below create with upsert (which stands for insert + create = upsert)
-          // await planets.create({
-          //   keplerName: data.kepler_name,
-          // });
+          
+          savePlanet(data);
         }
       })
       .on("error", (err) => {
         console.log(err);
         reject(err);
       })
-      .on("end", () => {
-        console.log(`${habitablePlanets.length} habitable planets found`);
+      .on("end", async () => {
+        const allPlanets = await getAllPlanets();
+        const numberOfPlanets = allPlanets.length;
+        console.log(`${numberOfPlanets} habitable planets found`);
         resolve();
       });
   });
@@ -49,6 +48,25 @@ function isHabitablePlanet(planet) {
 async function getAllPlanets() {
   //  This will return all the planets (or all documents) from the collection
   return await planets.find({});
+}
+
+async function savePlanet(planet) {
+  try {
+    await planets.updateOne(
+      {
+        keplerName: planet.kepler_name,
+      },
+      {
+        keplerName: planet.kepler_name,
+      },
+      {
+        upsert: true,
+      }
+    );
+  } catch (err) {
+    console.log("Could not save planet");
+    console.log(err);
+  }
 }
 
 module.exports = {
