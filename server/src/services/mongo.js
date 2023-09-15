@@ -1,3 +1,4 @@
+require("dotenv").config();
 // This MONGO_URL string is used to connect to the MongoDB database.
 
 /*  Check the link structure in the following link:
@@ -6,7 +7,7 @@ https://www.mongodb.com/docs/drivers/node/current/fundamentals/connection/connec
 
 */
 const MONGO_URL =
-  "mongodb+srv://nasa-api:SFJA3OOzhvCHXQ2Q@nasacluster.0pithss.mongodb.net/nasa?retryWrites=true&w=majority";
+  process.env.MONGO_URL;
 
 const mongoose = require("mongoose");
 
