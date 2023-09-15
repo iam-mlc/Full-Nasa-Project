@@ -1,6 +1,6 @@
 const launchesDatabase = require("./launches.mongo");
 const planetsDatabase = require("./planets.mongo");
-const axios = require("axios");
+const axios = require("axios").default;
 
 const DEFAULT_FLIGHT_NUMBER = 100;
 const SPACEX_API_URL = "https://api.spacexdata.com/v4/launches/query";
@@ -19,7 +19,7 @@ const launch = {
 saveLaunch(launch);
 
 async function getAllLauches() {
-  //  This converts the launches Map to an Array and then returns it. NOTE: The Launches array cannot be iterated (or looped), but an array can be looped. This is why the launches Map is being converted into an array.
+  //  This returns all the launches from the database and takes out the _id property and the __v property.
   return await launchesDatabase.find(
     {},
     {
@@ -70,9 +70,13 @@ async function scheduleNewLaunch(launch) {
   await saveLaunch(newLaunch);
 }
 
+async function findLaunch(filter) {
+  return await launchesDatabase.findOne(filter);
+}
+
 async function existsLauchWithId(launchId) {
   //  See if the launches Map contains the launchId. The launchId should be a key of the map. If the key is not found, the return statement will be undefined
-  return await launchesDatabase.findOne({ flightNumber: launchId });
+  return await findLaunch({ flightNumber: launchId });
 }
 
 // This function is used to set certain properties to false.
@@ -107,8 +111,9 @@ async function getLatestFlightNumber() {
   return latestLaunch.flightNumber;
 }
 
-async function loadLaunchesData() {
+async function populateLaunches() {
   console.log("Downloading launch data...");
+
   const rocketNames = {
     path: "rocket",
     select: {
@@ -116,17 +121,57 @@ async function loadLaunchesData() {
     },
   };
   const payloadCustomers = {
-    path: "payload",
+    path: "payloads",
     select: {
       customers: 1,
     },
   };
-  const response = await axios.post(SPACEX_API_URL, {
+
+  const postData = {
     query: {},
     options: {
       populate: [rocketNames, payloadCustomers],
+      pagination: false,
     },
+  };
+
+  const response = await axios.post(SPACEX_API_URL, postData);
+
+  const lauchDocs = response.data.docs;
+
+  for (const launchDoc of lauchDocs) {
+    const payloads = launchDoc["payloads"];
+    const customers = payloads.flatMap((payloads) => {
+      return payloads["customers"];
+    });
+    const launch = {
+      flightNumber: launchDoc["flight_number"],
+      mission: launchDoc["name"],
+      rocket: launchDoc["rocket"]["name"],
+      launchDate: launchDoc["date_local"],
+      target: launchDoc["destination"],
+      customers,
+      upcoming: launchDoc["upcoming"],
+      success: launchDoc["success"],
+    };
+
+    console.log(`${launch.flightNumber} ${launch.mission}`);
+  }
+
+  //TODO: Populate data launches
+}
+
+async function loadLaunchesData() {
+  const firstLaunch = await findLaunch({
+    flightNumber: 1,
+    rocket: "Falcon 1",
+    mission: "FalconSat",
   });
+  if (firstLaunch) {
+    console.log("Launch data already loaded !");
+  } else {
+    await populateLaunches();
+  }
 }
 
 module.exports = {
