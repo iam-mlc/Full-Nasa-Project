@@ -23,7 +23,6 @@ const types = {
   },
   target: {
     type: String,
-    required: true,
   },
   customers: [String],
   upcoming: {
