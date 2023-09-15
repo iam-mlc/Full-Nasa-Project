@@ -18,43 +18,33 @@ const launch = {
 
 saveLaunch(launch);
 
-async function getAllLauches() {
+async function getAllLauches(skip, limit) {
   //  This returns all the launches from the database and takes out the _id property and the __v property.
-  return await launchesDatabase.find(
-    {},
-    {
-      _id: 0,
-      __v: 0,
-    }
-  );
+  return await launchesDatabase
+    .find({}, { _id: 0, __v: 0 })
+    .skip(skip)
+    .limit(limit);
 }
 
 //  This function adds a new launch to the database related to launches. It first checks if the target planet exists in the planets database. If it does not exist, it returns an error. Otherwise it saves the launch to the database. When saving the lauch to the database the updateOne method is used, so that mongoose verifies if the data already exists (to avoid creating duplicates) based on the luanch flight number. If it already exists, the existing launch will be updated. Incase there was an error saving the launch, an error will be returned
 async function saveLaunch(launch) {
-  const planetExists = await findPlanet(launch.target);
-
-  try {
-    if (!planetExists) {
-      throw new Error("No matching planet found");
+  await launchesDatabase.findOneAndUpdate(
+    {
+      flightNumber: launch.flightNumber,
+    },
+    launch,
+    {
+      upsert: true,
     }
-
-    await launchesDatabase.findOneAndUpdate(
-      {
-        flightNumber: launch.flightNumber,
-      },
-      launch,
-      {
-        upsert: true,
-      }
-    );
-  } catch (err) {
-    console.log("Could not save launch");
-    console.log(err);
-  }
+  );
 }
 
 // This function adds a new launch to the database related to launches
 async function scheduleNewLaunch(launch) {
+  const planetExists = await findPlanet(launch.target);
+  if (!planetExists) {
+    throw new Error("No matching planet found");
+  }
   //  Since mongo db does not share the flight number with other clusters it will not make since to increment the flight number as a variable that is a part of the server. So we need to get the latest flight number that is stored in the database. By default we set the first flight number to the DEFAULT_FLIGHT_NUMBER variable and increment everytime a new launch is scheduled.
   const newFlightNumber = (await getLatestFlightNumber()) + 1;
 
@@ -137,6 +127,11 @@ async function populateLaunches() {
 
   const response = await axios.post(SPACEX_API_URL, postData);
 
+  if (response.status !== 200) {
+    console.log("Problem downloading launch data");
+    throw new Error("Launch data download failed");
+  }
+
   const lauchDocs = response.data.docs;
 
   for (const launchDoc of lauchDocs) {
@@ -156,9 +151,10 @@ async function populateLaunches() {
     };
 
     console.log(`${launch.flightNumber} ${launch.mission}`);
-  }
 
-  //TODO: Populate data launches
+    //TODO: Populate data launches
+    saveLaunch(launch);
+  }
 }
 
 async function loadLaunchesData() {
