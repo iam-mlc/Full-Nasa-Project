@@ -4,10 +4,13 @@ const {
   existsLauchWithId,
   abortLaunchById,
 } = require("../../models/launches.model.js");
+const { getPagination } = require("../../services/query.js");
 
 async function httpGetAllLaunches(req, res) {
+  const { skip, limit } = getPagination(req.query);
+  const launches = await getAllLauches(skip, limit)
   //  The return statement is added to prevent multiple responses from being made. This statement only makes one response and then ends the function. In this case it only returns the launches as an array. NOTE: Check how the getAllLaunches() function works to understand why the data is an array
-  return res.status(200).json(await getAllLauches());
+  return res.status(200).json(launches);
 }
 async function httpAddNewLaunch(req, res) {
   // This varible accesess the request interface (or object), so it can get the contents of the body property. In this project the body property will ususally contain a json file when posting requests.
