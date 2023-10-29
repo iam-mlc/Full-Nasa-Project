@@ -1,4 +1,4 @@
 # Full-Nasa-project
  This is a fullstack project that  uses the MERN Stack and can be used to schedule and store Nasa launches.The client has a launch page (also the homepage) that contains a form that is used to schedule a launch(to a limited number of planets), has an upcoming launches page where all upcoming launches are displayed and has a history page which demostrates which launches were a success or a failure, in other words it show the history of all launches. The launches and planets data rendered in the client are being served using RESTful API's. The database stores planets aquired by the Nasa archive (using a downloaded csv file), it stores the launches scheduled through the client side and it stores launches extracted from a spaceX api.
 
- NOTE: This is not a real NASA Dashboard that will shcedule actual launches 😆. It's just another interesting project made by a curious developer
+ NOTE: This is not a real NASA Dashboard that will schedule actual launches 😆. It's just another interesting project made by a curious developer
