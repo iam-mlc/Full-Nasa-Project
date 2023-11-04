@@ -34,7 +34,7 @@ async function scheduleNewLaunch(launch) {
   if (!planetExists) {
     throw new Error("No matching planet found");
   }
-  //  Since mongo db does not share the flight number with other clusters it will not make since to increment the flight number as a variable that is a part of the server. So we need to get the latest flight number that is stored in the database. By default we set the first flight number to the DEFAULT_FLIGHT_NUMBER variable and increment everytime a new launch is scheduled.
+  //  Since mongo db does not share the flight number with other clusters it will not make sense to increment the flight number as a variable that is a part of the server. So we need to get the latest flight number that is stored in the database. By default we set the first flight number to the DEFAULT_FLIGHT_NUMBER variable and increment everytime a new launch is scheduled.
   const newFlightNumber = (await getLatestFlightNumber()) + 1;
 
   const internalProperties = {
