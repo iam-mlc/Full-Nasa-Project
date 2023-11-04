@@ -10,9 +10,9 @@
     "server": "npm run watch --prefix server",
     "client": "npm start --prefix client",
     "watch": "concurrently \"npm run server\" \"npm run client\"",
-    "deploy": "cd client && npm run build && cd.. && cd server && npm start",
-    "deploy-cluster": "cd client && npm run build && cd.. && cd server && npm run cluster",
-    "test": "cd server && npm test && cd.. && cd client && npm test"
+    "deploy": "cd client && npm run build && cd .. && cd server && npm start",
+    "deploy-cluster": "cd client && npm run build && cd .. && cd server && npm run cluster",
+    "test": "cd server && npm test && cd .. && cd client && npm test"
   },
   "keywords": [],
   "author": "",
